@@ -7,11 +7,9 @@ function modifyLinks() {
   
   // Loop through all links and modify only those with target="_blank"
   Array.from(links).forEach(link => {
-    if (link.getAttribute('target') === '_blank') {
-      console.log(`Modifying link: ${link.href}`); // Log the link being modified
-      link.setAttribute('target', '_blank'); // Ensure it opens in a new tab
-      link.setAttribute('rel', 'noopener noreferrer'); // Security best practice
-    }
+    console.log(`Modifying link: ${link.href}`); // Log the link being modified
+    link.setAttribute('target', '_blank'); // Ensure it opens in a new tab
+    link.setAttribute('rel', 'noopener noreferrer'); // Security best practice
   });
 }
 
