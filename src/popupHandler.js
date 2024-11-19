@@ -1,33 +1,71 @@
-import { SyncHandler } from './syncHandler.js';
-
 document.addEventListener('DOMContentLoaded', async () => {
   const domainInput = document.getElementById('domainInput');
   const addDomainButton = document.getElementById('addDomainButton');
   const addCurrentSiteButton = document.getElementById('addCurrentSiteButton');
   const toggleAllSitesCheckbox = document.getElementById('toggleAllSites');
   const domainList = document.getElementById('domainList');
+  const domainsTitle = document.getElementById('domainsTitle');
 
-  // Initialize toggleAllSitesCheckbox
-  const allSites = await SyncHandler.get('allSites');
-  toggleAllSitesCheckbox.checked = allSites || false;
+  const updateUI = async () => {
+    const allSites = await SyncHandler.get('allSites');
+    toggleAllSitesCheckbox.checked = allSites || false;
 
-  // Event Listener for toggleAllSitesCheckbox
-  toggleAllSitesCheckbox.addEventListener('change', async event => {
-    await SyncHandler.set('allSites', event.target.checked);
-    console.log(`All sites toggle saved as: ${event.target.checked}`);
+    // Update title and buttons based on allSites state
+    domainsTitle.textContent = allSites ? 'Excluded Domains' : 'Included Domains';
+    addDomainButton.innerHTML = `<i class="fas ${allSites ? 'fa-minus' : 'fa-plus'}"></i>${allSites ? 'Exclude Domain' : 'Add Domain'}`;
+    addCurrentSiteButton.innerHTML = `<i class="fas fa-globe"></i>${allSites ? 'Exclude Current Site' : 'Add Current Site'}`;
+
+    const key = allSites ? 'excludedDomains' : 'domains';
+    const domains = await SyncHandler.get(key);
+    domainList.innerHTML = ''; // Clear the list
+    if (domains && Array.isArray(domains)) {
+      domains.forEach(domain => addDomainToList(domain, key));
+    }
+  };
+
+  const addDomain = async () => {
+    const allSites = await SyncHandler.get('allSites');
+    const key = allSites ? 'excludedDomains' : 'domains';
+    let domain = domainInput.value.trim();
+    if (!domain) return;
+
+    if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
+      domain = 'https://' + domain;
+    }
+    domain = new URL(domain).hostname;
+
+    const domains = (await SyncHandler.get(key)) || [];
+    if (!domains.includes(domain)) {
+      domains.push(domain);
+      await SyncHandler.set(key, domains);
+      addDomainToList(domain, key);
+      domainInput.value = '';
+    }
+  };
+
+  const addDomainToList = (domain, key) => {
+    const li = document.createElement('li');
+    li.textContent = domain;
+
+    const removeButton = document.createElement('button');
+    removeButton.innerHTML = '<i class="fas fa-trash-alt"></i>Remove';
+    removeButton.addEventListener('click', async () => {
+      const domains = (await SyncHandler.get(key)) || [];
+      const updatedDomains = domains.filter(d => d !== domain);
+      await SyncHandler.set(key, updatedDomains);
+      li.remove();
+    });
+
+    li.appendChild(removeButton);
+    domainList.appendChild(li);
+  };
+
+  toggleAllSitesCheckbox.addEventListener('change', async () => {
+    await SyncHandler.set('allSites', toggleAllSitesCheckbox.checked);
+    updateUI();
   });
-
-  // Load and display saved domains
-  const domains = await SyncHandler.get('domains');
-  if (domains && Array.isArray(domains)) {
-    domains.forEach(domain => addDomainToList(domain));
-  }
 
   addDomainButton.addEventListener('click', addDomain);
-
-  domainInput.addEventListener('keypress', event => {
-    if (event.key === 'Enter') addDomain();
-  });
 
   addCurrentSiteButton.addEventListener('click', () => {
     chrome.tabs.query({ active: true, currentWindow: true }, async tabs => {
@@ -40,40 +78,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   });
 
-  // Function to add a domain
-  async function addDomain() {
-    let domain = domainInput.value.trim();
-    if (!domain) return;
+  domainInput.addEventListener('keypress', event => {
+    if (event.key === 'Enter') addDomain();
+  });
 
-    if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
-      domain = 'https://' + domain;
-    }
-    domain = new URL(domain).hostname;
-
-    const domains = (await SyncHandler.get('domains')) || [];
-    if (!domains.includes(domain)) {
-      domains.push(domain);
-      await SyncHandler.set('domains', domains);
-      addDomainToList(domain);
-      domainInput.value = '';
-    }
-  }
-
-  // Function to add a domain to the UI list
-  function addDomainToList(domain) {
-    const li = document.createElement('li');
-    li.textContent = domain;
-
-    const removeButton = document.createElement('button');
-    removeButton.innerHTML = '<i class="fas fa-trash-alt"></i>Remove';
-    removeButton.addEventListener('click', async () => {
-      const domains = (await SyncHandler.get('domains')) || [];
-      const updatedDomains = domains.filter(d => d !== domain);
-      await SyncHandler.set('domains', updatedDomains);
-      li.remove();
-    });
-
-    li.appendChild(removeButton);
-    domainList.appendChild(li);
-  }
+  updateUI();
 });

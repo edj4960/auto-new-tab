@@ -1,4 +1,4 @@
-import { SyncHandler } from './syncHandler.js';
+// import { SyncHandler } from './syncHandler.js';
 
 const LinkUpdater = {
   setLinksToOpenInNewTab(links) {
@@ -20,14 +20,21 @@ const LinkUpdater = {
   },
 
   async modifyLinksIfNeeded() {
-    const domains = await SyncHandler.get('domains');
-    if (!domains || !Array.isArray(domains)) return;
-
+    const allSites = await SyncHandler.get('allSites');
+    const key = allSites ? 'excludedDomains' : 'domains';
+    const domains = await SyncHandler.get(key);
+    
+    if (!allSites && (!domains || !Array.isArray(domains))) return;
+    
     const currentDomain = window.location.hostname;
-    const shouldModifyLinks = domains.some(domain => {
-      const domainHostname = new URL(domain.startsWith('http') ? domain : 'https://' + domain).hostname;
-      return currentDomain.includes(domainHostname);
-    });
+
+    console.log(allSites, key, domains, currentDomain);
+
+    const shouldModifyLinks = allSites
+      ? !domains.some(domain => currentDomain.includes(new URL(domain).hostname))
+      : domains.some(domain => currentDomain.includes(new URL(domain).hostname));
+
+    console.log(shouldModifyLinks);
 
     if (shouldModifyLinks) {
       this.setLinksToOpenInNewTab(Array.from(document.links));
@@ -39,7 +46,7 @@ const LinkUpdater = {
       });
 
       SyncHandler.onChange(changes => {
-        if (changes.domains) {
+        if (changes[key]) {
           observer.disconnect();
           this.modifyLinksIfNeeded();
         }
@@ -48,5 +55,4 @@ const LinkUpdater = {
   },
 };
 
-// Initialize the script
 LinkUpdater.modifyLinksIfNeeded();
