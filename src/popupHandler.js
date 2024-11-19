@@ -23,25 +23,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   };
 
-  const addDomain = async () => {
-    const allSites = await SyncHandler.get('allSites');
-    const key = allSites ? 'excludedDomains' : 'domains';
+  async function addDomain() {
     let domain = domainInput.value.trim();
     if (!domain) return;
-
-    if (!domain.startsWith('http://') && !domain.startsWith('https://')) {
-      domain = 'https://' + domain;
+  
+    const normalizedDomain = LinkUpdater.normalizeDomain(domain);
+    if (!normalizedDomain) {
+      alert('Invalid domain. Please try again.');
+      return;
     }
-    domain = new URL(domain).hostname;
+  
+    const allSites = await SyncHandler.get('allSites');
 
+    const key = allSites ? 'excludedDomains' : 'domains';
     const domains = (await SyncHandler.get(key)) || [];
-    if (!domains.includes(domain)) {
-      domains.push(domain);
+  
+    if (!domains.includes(normalizedDomain)) {
+      domains.push(normalizedDomain);
       await SyncHandler.set(key, domains);
-      addDomainToList(domain, key);
+      addDomainToList(normalizedDomain, key);
       domainInput.value = '';
     }
-  };
+  }
 
   const addDomainToList = (domain, key) => {
     const li = document.createElement('li');
