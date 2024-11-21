@@ -1,6 +1,6 @@
 const LinkUpdater = {
   async modifyLinksIfNeeded() {
-    const allSites = await SyncHandler.get('allSites');
+    const allSites = await SyncHandler.get('allSites', true);
     const key = allSites ? 'excludedDomains' : 'domains';
     const domains = await SyncHandler.get(key);
     
@@ -8,8 +8,6 @@ const LinkUpdater = {
     
     const currentDomain = window.location.hostname;
 
-    console.log(allSites, key, domains, currentDomain);
-    
     // Normalize domains and filter out invalid entries
     const normalizedDomains = domains
       .map(this.normalizeDomain)
@@ -18,8 +16,6 @@ const LinkUpdater = {
     const shouldModifyLinks = allSites
       ? !normalizedDomains.some(domain => currentDomain.includes(domain))
       : normalizedDomains.some(domain => currentDomain.includes(domain));
-    
-    console.log(shouldModifyLinks);
     
     if (shouldModifyLinks) {
       this.setLinksToOpenInNewTab(Array.from(document.links));
@@ -66,7 +62,6 @@ const LinkUpdater = {
       // Attempt to construct a valid URL
       return new URL(domain).hostname;
     } catch (error) {
-      console.error(`Invalid domain: ${domain}`, error);
       return null; // Skip invalid domains
     }
   },

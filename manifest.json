@@ -1,9 +1,9 @@
 {
     "manifest_version": 3,
-    "name": "Open Pop-ups in Tabs",
+    "name": "Auto New Tab",
     "version": "1.0",
-    "description": "Forces pop-up links to open in a new tab instead of a new window.",
-    "permissions": ["tabs", "storage"],
+    "description": "Auto New Tab ensures all links open in new tabs, with customizable options to enable for all sites or specific domains.",
+    "permissions": ["activeTab", "storage"],
     "content_scripts": [
       {
         "matches": ["<all_urls>"],

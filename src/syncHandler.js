@@ -1,8 +1,8 @@
 const SyncHandler = {
-  get(key) {
+  get(key, defaultValue = null) {
     return new Promise(resolve => {
       chrome.storage.sync.get([key], result => {
-        resolve(result[key]);
+        resolve(result[key] !== undefined ? result[key] : defaultValue);
       });
     });
   },

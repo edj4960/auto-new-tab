@@ -1,17 +1,20 @@
 document.addEventListener('DOMContentLoaded', async () => {
   const domainInput = document.getElementById('domainInput');
   const addDomainButton = document.getElementById('addDomainButton');
+  const addDomainTitle = document.getElementById('addDomainTitle');
   const addCurrentSiteButton = document.getElementById('addCurrentSiteButton');
   const toggleAllSitesCheckbox = document.getElementById('toggleAllSites');
   const domainList = document.getElementById('domainList');
   const domainsTitle = document.getElementById('domainsTitle');
 
   const updateUI = async () => {
-    const allSites = await SyncHandler.get('allSites');
-    toggleAllSitesCheckbox.checked = allSites || false;
+    const allSites = await SyncHandler.get('allSites', true);
+
+    toggleAllSitesCheckbox.checked = allSites;
 
     // Update title and buttons based on allSites state
     domainsTitle.textContent = allSites ? 'Excluded Domains' : 'Included Domains';
+    addDomainTitle.innerHTML = allSites ? 'Exclude Domains' : 'Add Domains';
     addDomainButton.innerHTML = `<i class="fas ${allSites ? 'fa-minus' : 'fa-plus'}"></i>${allSites ? 'Exclude Domain' : 'Add Domain'}`;
     addCurrentSiteButton.innerHTML = `<i class="fas fa-globe"></i>${allSites ? 'Exclude Current Site' : 'Add Current Site'}`;
 
@@ -33,7 +36,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       return;
     }
   
-    const allSites = await SyncHandler.get('allSites');
+    const allSites = await SyncHandler.get('allSites', true);
 
     const key = allSites ? 'excludedDomains' : 'domains';
     const domains = (await SyncHandler.get(key)) || [];
@@ -42,8 +45,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       domains.push(normalizedDomain);
       await SyncHandler.set(key, domains);
       addDomainToList(normalizedDomain, key);
-      domainInput.value = '';
     }
+    domainInput.value = '';
   }
 
   const addDomainToList = (domain, key) => {
@@ -51,7 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     li.textContent = domain;
 
     const removeButton = document.createElement('button');
-    removeButton.innerHTML = '<i class="fas fa-trash-alt"></i>Remove';
+    removeButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
     removeButton.addEventListener('click', async () => {
       const domains = (await SyncHandler.get(key)) || [];
       const updatedDomains = domains.filter(d => d !== domain);
