@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const allSites = await SyncHandler.get('allSites', true);
 
     const key = allSites ? 'excludedDomains' : 'domains';
-    const domains = (await SyncHandler.get(key)) || [];
+    const domains = (await SyncHandler.get(key, []));
   
     if (!domains.includes(normalizedDomain)) {
       domains.push(normalizedDomain);
@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const removeButton = document.createElement('button');
     removeButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
     removeButton.addEventListener('click', async () => {
-      const domains = (await SyncHandler.get(key)) || [];
+      const domains = (await SyncHandler.get(key, []));
       const updatedDomains = domains.filter(d => d !== domain);
       await SyncHandler.set(key, updatedDomains);
       li.remove();

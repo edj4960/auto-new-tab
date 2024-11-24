@@ -2,7 +2,8 @@ const LinkUpdater = {
   async modifyLinksIfNeeded() {
     const allSites = await SyncHandler.get('allSites', true);
     const key = allSites ? 'excludedDomains' : 'domains';
-    const domains = await SyncHandler.get(key);
+    const domains = await SyncHandler.get(key, []);
+    console.log(domains);
     
     if (!allSites && (!domains || !Array.isArray(domains))) return;
     
