@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
     "name": "Auto New Tab",
-    "version": "1.0",
-    "description": "Auto New Tab ensures all links open in new tabs, with customizable options to enable for all sites or specific domains.",
+    "version": "1.1",
+    "description": "Auto New Tab streamlines your browsing experience by automatically opening links in new tabs.",
     "permissions": ["activeTab", "storage"],
     "content_scripts": [
       {
