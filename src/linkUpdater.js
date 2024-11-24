@@ -1,9 +1,10 @@
 const LinkUpdater = {
+  originalLinkAttributes: new WeakMap(), // Store original attributes here
+
   async modifyLinksIfNeeded() {
     const allSites = await SyncHandler.get('allSites', true);
     const key = allSites ? 'excludedDomains' : 'domains';
     const domains = await SyncHandler.get(key, []);
-    console.log(domains);
     
     if (!allSites && (!domains || !Array.isArray(domains))) return;
     
@@ -18,22 +19,25 @@ const LinkUpdater = {
       ? !normalizedDomains.some(domain => currentDomain.includes(domain))
       : normalizedDomains.some(domain => currentDomain.includes(domain));
     
+    let observer = null;
     if (shouldModifyLinks) {
-      this.setLinksToOpenInNewTab(Array.from(document.links));
+      this.saveAndModifyLinks(Array.from(document.links));
       
-      const observer = this.observeLinks();
+      observer = this.observeLinks();
       observer.observe(document.body, {
         childList: true,
         subtree: true,
       });
       
-      SyncHandler.onChange(changes => {
-        if (changes[key]) {
-          observer.disconnect();
-          this.modifyLinksIfNeeded();
-        }
-      });
     }
+
+    SyncHandler.onChange(() => {
+      if (observer !== null) {
+        observer.disconnect();
+      }
+      this.resetLinks();
+      this.modifyLinksIfNeeded();
+    });
   },
 
   observeLinks() {
@@ -42,15 +46,48 @@ const LinkUpdater = {
         const newLinks = Array.from(mutation.addedNodes).flatMap(node =>
           node.nodeType === Node.ELEMENT_NODE ? Array.from(node.getElementsByTagName('a')) : []
         );
-        this.setLinksToOpenInNewTab(newLinks);
+        this.saveAndModifyLinks(newLinks);
       });
     });
   },
 
-  setLinksToOpenInNewTab(links) {
+  saveAndModifyLinks(links) {
     links.forEach(link => {
+      // Save original attributes if not already saved
+      if (!this.originalLinkAttributes.has(link)) {
+        this.originalLinkAttributes.set(link, {
+          target: link.getAttribute('target') || null,
+          rel: link.getAttribute('rel') || null,
+        });
+      }
+
+      // Modify the link to open in a new tab
       link.setAttribute('target', '_blank');
       link.setAttribute('rel', 'noopener noreferrer');
+    });
+  },
+
+  resetLinks() {
+    Array.from(document.links).forEach(link => {
+      if (this.originalLinkAttributes.has(link)) {
+        const originalAttrs = this.originalLinkAttributes.get(link);
+
+        // Restore original attributes
+        if (originalAttrs.target !== null) {
+          link.setAttribute('target', originalAttrs.target);
+        } else {
+          link.removeAttribute('target');
+        }
+
+        if (originalAttrs.rel !== null) {
+          link.setAttribute('rel', originalAttrs.rel);
+        } else {
+          link.removeAttribute('rel');
+        }
+
+        // Remove from WeakMap to avoid memory leaks
+        this.originalLinkAttributes.delete(link);
+      }
     });
   },
 
